@@ -16,4 +16,19 @@ button {
 
 li {
   margin: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.done {
+  text-decoration: line-through;
+}
+
+.delete-btn {
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
 }

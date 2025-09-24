@@ -13,7 +13,17 @@ form.addEventListener("submit", function (e) {
 
 function addTask(task) {
   const li = document.createElement("li");
-  li.textContent = task;
-  li.addEventListener("click", () => li.classList.toggle("done"));
+
+  const span = document.createElement("span");
+  span.textContent = task;
+  span.addEventListener("click", () => span.classList.toggle("done"));
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "削除";
+  deleteBtn.classList.add("delete-btn");
+  deleteBtn.addEventListener("click", () => li.remove());
+
+  li.appendChild(span);
+  li.appendChild(deleteBtn);
   list.appendChild(li);
 }
