@@ -14,10 +14,17 @@
       }
       li {
         margin: 5px 0;
+        display: flex;
+        align-items: center;
       }
       .done {
         text-decoration: line-through;
         color: gray;
+      }
+      button {
+        margin-left: 10px;
+        padding: 2px 6px;
+        cursor: pointer;
       }
     </style>
   </head>
@@ -41,23 +48,35 @@
         tasks.forEach((task, index) => {
           const li = document.createElement("li");
 
+          // チェックボックス
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox";
           checkbox.checked = task.done;
 
+          // タスクのテキスト
           const span = document.createElement("span");
           span.textContent = " " + task.text;
           if (task.done) span.classList.add("done");
 
-          // チェック変更で保存
+          // ✅ チェックで完了/未完了切り替え
           checkbox.addEventListener("change", () => {
             tasks[index].done = checkbox.checked;
             saveTasks();
             renderTasks();
           });
 
+          // 🗑 削除ボタン
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "削除";
+          deleteBtn.addEventListener("click", () => {
+            tasks.splice(index, 1); // 配列から削除
+            saveTasks();
+            renderTasks();
+          });
+
           li.appendChild(checkbox);
           li.appendChild(span);
+          li.appendChild(deleteBtn);
           list.appendChild(li);
         });
       }
