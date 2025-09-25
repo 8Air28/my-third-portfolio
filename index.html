@@ -2,17 +2,85 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Todoリストアプリ</title>
-    <link rel="stylesheet" href="style.css" />
+    <title>Todoリスト</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 30px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        margin: 5px 0;
+      }
+      .done {
+        text-decoration: line-through;
+        color: gray;
+      }
+    </style>
   </head>
   <body>
     <h1>Todoリスト</h1>
-    <form id="todo-form">
-      <input type="text" id="todo-input" placeholder="タスクを入力" />
-      <button type="submit">追加</button>
-    </form>
-    <ul id="todo-list"></ul>
-    <script src="script.js"></script>
+    <input type="text" id="taskInput" placeholder="タスクを入力" />
+    <button id="addTaskBtn">追加</button>
+    <ul id="taskList"></ul>
+
+    <script>
+      const input = document.getElementById("taskInput");
+      const btn = document.getElementById("addTaskBtn");
+      const list = document.getElementById("taskList");
+
+      // 📌 localStorageから保存データを読み込む
+      let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+      // 📌 タスクを画面に表示する関数
+      function renderTasks() {
+        list.innerHTML = "";
+        tasks.forEach((task, index) => {
+          const li = document.createElement("li");
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = task.done;
+
+          const span = document.createElement("span");
+          span.textContent = " " + task.text;
+          if (task.done) span.classList.add("done");
+
+          // チェック変更で保存
+          checkbox.addEventListener("change", () => {
+            tasks[index].done = checkbox.checked;
+            saveTasks();
+            renderTasks();
+          });
+
+          li.appendChild(checkbox);
+          li.appendChild(span);
+          list.appendChild(li);
+        });
+      }
+
+      // 📌 タスクを保存する関数
+      function saveTasks() {
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+      }
+
+      // 📌 新しいタスクを追加
+      btn.addEventListener("click", () => {
+        const taskText = input.value.trim();
+        if (taskText === "") return;
+
+        tasks.push({ text: taskText, done: false });
+        saveTasks();
+        renderTasks();
+
+        input.value = "";
+      });
+
+      // 初期表示
+      renderTasks();
+    </script>
   </body>
 </html>
