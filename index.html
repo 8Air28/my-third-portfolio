@@ -2,103 +2,381 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <title>Todoリスト</title>
+    <title>Todoアプリ - 類似履歴＋UI改善版</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        margin: 30px;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        margin: 0;
+        display: flex;
+        background-color: #f5f7fa;
       }
+
+      #sidebar {
+        width: 300px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 20px;
+        height: 100vh;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+
+      #sidebar h2 {
+        margin-top: 0;
+      }
+
+      #sidebar input,
+      #sidebar select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: none;
+        border-radius: 8px;
+      }
+
+      #main {
+        flex: 1;
+        padding: 20px;
+      }
+
+      h1 {
+        margin-top: 0;
+      }
+
+      #taskInput {
+        width: calc(100% - 120px);
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+      }
+
+      #addTaskBtn {
+        padding: 10px 15px;
+        margin-left: 10px;
+        border: none;
+        background-color: #667eea;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s ease, background-color 0.2s ease;
+      }
+
+      #addTaskBtn:hover {
+        background-color: #5a67d8;
+        transform: scale(1.05);
+      }
+
+      #warning {
+        color: #e74c3c;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+
+      #checkSimilarBtn,
+      #viewHistoryBtn {
+        padding: 8px 12px;
+        margin-top: 10px;
+        background: #f39c12;
+        border: none;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: transform 0.2s ease, background-color 0.3s ease;
+      }
+
+      #checkSimilarBtn:hover,
+      #viewHistoryBtn:hover {
+        background-color: #e67e22;
+        transform: scale(1.05);
+      }
+
+      #similarList,
+      #historyList {
+        color: #f39c12;
+        font-size: 14px;
+        margin-top: 5px;
+        padding-left: 10px;
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+
       ul {
         list-style: none;
         padding: 0;
       }
+
       li {
-        margin: 5px 0;
+        margin: 10px 0;
+        padding: 10px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
         display: flex;
+        justify-content: space-between;
         align-items: center;
+        animation: fadeIn 0.3s ease;
       }
+
       .done {
         text-decoration: line-through;
         color: gray;
       }
-      button {
+
+      .timestamp {
+        font-size: 12px;
+        color: #999;
         margin-left: 10px;
-        padding: 2px 6px;
+      }
+
+      button.deleteBtn {
+        padding: 5px 8px;
+        border: none;
+        background: #e74c3c;
+        color: white;
+        border-radius: 8px;
         cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      button.deleteBtn:hover {
+        background: #c0392b;
+      }
+
+      input[type="checkbox"] {
+        transform: scale(1.2);
+        margin-right: 8px;
+        cursor: pointer;
+      }
+
+      @keyframes fadeIn {
+        0% {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          flex-direction: column;
+        }
+        #sidebar {
+          width: 100%;
+          height: auto;
+        }
+        #main {
+          padding: 10px;
+        }
+        #taskInput {
+          width: calc(100% - 100px);
+        }
       }
     </style>
   </head>
   <body>
-    <h1>Todoリスト</h1>
-    <input type="text" id="taskInput" placeholder="タスクを入力" />
-    <button id="addTaskBtn">追加</button>
-    <ul id="taskList"></ul>
+    <div id="sidebar">
+      <h2>検索・フィルター</h2>
+      <input type="text" id="searchInput" placeholder="タスクを検索" />
+      <select id="filterSelect">
+        <option value="all">すべて</option>
+        <option value="done">完了のみ</option>
+        <option value="undone">未完了のみ</option>
+      </select>
+      <button id="viewHistoryBtn">類似履歴を見る</button>
+      <div id="historyList"></div>
+    </div>
+
+    <div id="main">
+      <h1>Todoリスト</h1>
+      <div style="display: flex; align-items: center">
+        <input type="text" id="taskInput" placeholder="タスクを入力" />
+        <button id="addTaskBtn">追加</button>
+      </div>
+      <div id="warning"></div>
+      <button id="checkSimilarBtn">類似タスクを確認</button>
+      <div id="similarList"></div>
+      <ul id="taskList"></ul>
+    </div>
 
     <script>
       const input = document.getElementById("taskInput");
       const btn = document.getElementById("addTaskBtn");
       const list = document.getElementById("taskList");
+      const searchInput = document.getElementById("searchInput");
+      const filterSelect = document.getElementById("filterSelect");
+      const warning = document.getElementById("warning");
+      const similarListDiv = document.getElementById("similarList");
+      const historyListDiv = document.getElementById("historyList");
+      const checkSimilarBtn = document.getElementById("checkSimilarBtn");
+      const viewHistoryBtn = document.getElementById("viewHistoryBtn");
 
-      // 📌 localStorageから保存データを読み込む
       let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+      let similarHistory =
+        JSON.parse(localStorage.getItem("similarHistory")) || [];
 
-      // 📌 タスクを画面に表示する関数
-      function renderTasks() {
-        list.innerHTML = "";
-        tasks.forEach((task, index) => {
-          const li = document.createElement("li");
+      function normalize(str) {
+        return str
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .replace(/[ぁ-ん]/g, (s) =>
+            String.fromCharCode(s.charCodeAt(0) + 0x60)
+          );
+      }
 
-          // チェックボックス
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = task.done;
+      function levenshtein(a, b) {
+        const m = [];
+        for (let i = 0; i <= b.length; i++) m[i] = [i];
+        for (let j = 0; j <= a.length; j++) m[0][j] = j;
+        for (let i = 1; i <= b.length; i++) {
+          for (let j = 1; j <= a.length; j++) {
+            m[i][j] =
+              b.charAt(i - 1) === a.charAt(j - 1)
+                ? m[i - 1][j - 1]
+                : Math.min(
+                    m[i - 1][j - 1] + 1,
+                    m[i][j - 1] + 1,
+                    m[i - 1][j] + 1
+                  );
+          }
+        }
+        return m[b.length][a.length];
+      }
 
-          // タスクのテキスト
-          const span = document.createElement("span");
-          span.textContent = " " + task.text;
-          if (task.done) span.classList.add("done");
-
-          // ✅ チェックで完了/未完了切り替え
-          checkbox.addEventListener("change", () => {
-            tasks[index].done = checkbox.checked;
-            saveTasks();
-            renderTasks();
-          });
-
-          // 🗑 削除ボタン
-          const deleteBtn = document.createElement("button");
-          deleteBtn.textContent = "削除";
-          deleteBtn.addEventListener("click", () => {
-            tasks.splice(index, 1); // 配列から削除
-            saveTasks();
-            renderTasks();
-          });
-
-          li.appendChild(checkbox);
-          li.appendChild(span);
-          li.appendChild(deleteBtn);
-          list.appendChild(li);
+      function findSimilarTasks(newTask) {
+        const normNew = normalize(newTask);
+        return tasks.filter((task) => {
+          const normOld = normalize(task.text);
+          const distance = levenshtein(normNew, normOld);
+          const similarity =
+            1 - distance / Math.max(normNew.length, normOld.length);
+          return similarity >= 0.4;
         });
       }
 
-      // 📌 タスクを保存する関数
-      function saveTasks() {
-        localStorage.setItem("tasks", JSON.stringify(tasks));
+      function renderTasks(filter = "", status = "all") {
+        list.innerHTML = "";
+        tasks
+          .filter((task) => task.text.includes(filter))
+          .filter((task) => {
+            if (status === "done") return task.done;
+            if (status === "undone") return !task.done;
+            return true;
+          })
+          .forEach((task, index) => {
+            const li = document.createElement("li");
+            const leftDiv = document.createElement("div");
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = task.done;
+
+            const span = document.createElement("span");
+            span.textContent = " " + task.text;
+            if (task.done) span.classList.add("done");
+
+            checkbox.addEventListener("change", () => {
+              tasks[index].done = checkbox.checked;
+              tasks[index].completedAt = checkbox.checked
+                ? new Date().toLocaleString()
+                : null;
+              saveTasks();
+              renderTasks(filter, status);
+            });
+
+            const timestamp = document.createElement("span");
+            timestamp.classList.add("timestamp");
+            if (task.completedAt) {
+              timestamp.textContent = `（完了: ${task.completedAt}）`;
+            }
+
+            leftDiv.appendChild(checkbox);
+            leftDiv.appendChild(span);
+            leftDiv.appendChild(timestamp);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "削除";
+            deleteBtn.className = "deleteBtn";
+            deleteBtn.addEventListener("click", () => {
+              tasks.splice(index, 1);
+              saveTasks();
+              renderTasks(filter, status);
+            });
+
+            li.appendChild(leftDiv);
+            li.appendChild(deleteBtn);
+            list.appendChild(li);
+          });
       }
 
-      // 📌 新しいタスクを追加
-      btn.addEventListener("click", () => {
+      function saveTasks() {
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+        localStorage.setItem("similarHistory", JSON.stringify(similarHistory));
+      }
+
+      function addTask() {
         const taskText = input.value.trim();
         if (taskText === "") return;
 
-        tasks.push({ text: taskText, done: false });
-        saveTasks();
-        renderTasks();
+        const similarTasks = findSimilarTasks(taskText);
 
+        if (similarTasks.length > 0) {
+          warning.textContent = "⚠ 類似するタスクがあります！";
+          similarHistory.push({
+            task: taskText,
+            similar: similarTasks.map((t) => t.text),
+            timestamp: new Date().toLocaleString(),
+          });
+          saveTasks();
+        } else {
+          warning.textContent = "";
+        }
+
+        tasks.push({ text: taskText, done: false, completedAt: null });
+        saveTasks();
+        renderTasks(searchInput.value, filterSelect.value);
         input.value = "";
+      }
+
+      btn.addEventListener("click", addTask);
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") addTask();
       });
 
-      // 初期表示
+      checkSimilarBtn.addEventListener("click", () => {
+        if (similarHistory.length === 0) return;
+        const last = similarHistory[similarHistory.length - 1];
+        similarListDiv.style.display =
+          similarListDiv.style.display === "none" ? "block" : "none";
+        similarListDiv.innerHTML =
+          `最新チェック: 「${last.task}」<br>` +
+          last.similar.map((t) => "・" + t).join("<br>");
+      });
+
+      viewHistoryBtn.addEventListener("click", () => {
+        historyListDiv.style.display =
+          historyListDiv.style.display === "none" ? "block" : "none";
+        historyListDiv.innerHTML = similarHistory
+          .map((h) => {
+            return (
+              `<strong>${h.task}</strong> (${h.timestamp}):<br>` +
+              h.similar.map((t) => "・" + t).join("<br>")
+            );
+          })
+          .join("<hr>");
+      });
+
+      searchInput.addEventListener("input", () => {
+        renderTasks(searchInput.value, filterSelect.value);
+      });
+
+      filterSelect.addEventListener("change", () => {
+        renderTasks(searchInput.value, filterSelect.value);
+      });
+
       renderTasks();
     </script>
   </body>
